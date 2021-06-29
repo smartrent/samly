@@ -1,5 +1,5 @@
-defmodule Samly.IdpDataStore.Store do
-  alias Samly.IdpData
+defmodule Samly.SpDataStore.Store do
+  alias Samly.SpData
 
   @doc """
   Called during GenServer init to initializes the store.
@@ -12,13 +12,13 @@ defmodule Samly.IdpDataStore.Store do
   @doc """
   Fetches the IdpData for the given Id from the store.
   """
-  @callback get(binary) :: nil | IdpData.t()
+  @callback get(binary) :: nil | SpData.t()
 
   @doc """
   Saves the IdpData for the given Id into the store.
   Could be omitted by implementation. In that case, it should return `:unsupported`
   """
-  @callback put(binary, IdpData.t()) :: :ok | :unsupported | {:error, any()}
+  @callback put(binary, SpData.t()) :: :ok | :unsupported | {:error, any()}
 
   @doc """
   Removes the IdpData for the given Id from the store.

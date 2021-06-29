@@ -14,6 +14,7 @@ defmodule Samly.IdpData do
             sp_id: "",
             base_url: nil,
             metadata_file: nil,
+            metadata: nil,
             pre_session_create_pipeline: nil,
             use_redirect_for_req: false,
             sign_requests: true,
@@ -40,6 +41,7 @@ defmodule Samly.IdpData do
           sp_id: binary(),
           base_url: nil | binary(),
           metadata_file: nil | binary(),
+          metadata: nil | binary(),
           pre_session_create_pipeline: nil | module(),
           use_redirect_for_req: boolean(),
           sign_requests: boolean(),
@@ -90,23 +92,23 @@ defmodule Samly.IdpData do
     |> Keyword.get(:idp_data_store, Samly.IdpDataStore.Config)
   end
 
-  @spec load_providers([map], %{required(id()) => %SpData{}}) ::
+  @spec load_providers([map]) ::
           %{required(id()) => %IdpData{}} | no_return()
-  def load_providers(prov_config, service_providers) do
+  def load_providers(prov_config) do
     prov_config
-    |> Enum.map(fn idp_config -> load_provider(idp_config, service_providers) end)
+    |> Enum.map(fn idp_config -> load_provider(idp_config) end)
     |> Enum.filter(fn idp_data -> idp_data.valid? end)
     |> Enum.map(fn idp_data -> {idp_data.id, idp_data} end)
     |> Enum.into(%{})
   end
 
-  @spec load_provider(map(), %{required(id()) => %SpData{}}) :: %IdpData{} | no_return
-  def load_provider(idp_config, service_providers) do
+  @spec load_provider(map()) :: %IdpData{} | no_return
+  def load_provider(idp_config) do
     %IdpData{}
     |> save_idp_config(idp_config)
     |> load_metadata(idp_config)
     |> override_nameid_format(idp_config)
-    |> update_esaml_recs(service_providers, idp_config)
+    |> update_esaml_recs(idp_config)
     |> verify_slo_url()
   end
 
@@ -126,7 +128,8 @@ defmodule Samly.IdpData do
   end
 
   @spec load_metadata(%IdpData{}, map()) :: %IdpData{}
-  defp load_metadata(idp_data, _opts_map) do
+  defp load_metadata(%{metadata_file: metadata_file} = idp_data, _opts_map)
+       when is_binary(metadata_file) do
     with {:reading, {:ok, raw_xml}} <- {:reading, File.read(idp_data.metadata_file)},
          {:parsing, {:ok, idp_data}} <- {:parsing, from_xml(raw_xml, idp_data)} do
       idp_data
@@ -151,9 +154,27 @@ defmodule Samly.IdpData do
     end
   end
 
-  @spec update_esaml_recs(%IdpData{}, %{required(id()) => %SpData{}}, map()) :: %IdpData{}
-  defp update_esaml_recs(idp_data, service_providers, opts_map) do
-    case Map.get(service_providers, idp_data.sp_id) do
+  defp load_metadata(%{metadata: metadata} = idp_data, _opts_map) when is_binary(metadata) do
+    case from_xml(metadata, idp_data) do
+      {:ok, idp_data} ->
+        idp_data
+
+      {:error, reason} ->
+        Logger.error("[Samly] Invalid metadata content: #{inspect(reason)}")
+
+        idp_data
+    end
+  end
+
+  defp load_metadata(idp_data, _opts_map) do
+    Logger.error("[Samly] No metadata specified")
+
+    idp_data
+  end
+
+  @spec update_esaml_recs(%IdpData{}, map()) :: %IdpData{}
+  defp update_esaml_recs(idp_data, opts_map) do
+    case Helper.get_sp(idp_data.sp_id) do
       %SpData{} = sp ->
         idp_data = %IdpData{idp_data | esaml_idp_rec: to_esaml_idp_metadata(idp_data, opts_map)}
         idp_data = %IdpData{idp_data | esaml_sp_rec: get_esaml_sp(sp, idp_data)}

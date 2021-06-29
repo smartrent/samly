@@ -2,7 +2,12 @@ defmodule Samly.Helper do
   @moduledoc false
 
   require Samly.Esaml
-  alias Samly.{Assertion, Esaml, IdpData}
+  alias Samly.{Assertion, Esaml, SpData, IdpData}
+
+  @spec get_sp(binary) :: nil | SpData.t()
+  def get_sp(sp_id) do
+    SpData.store().get(sp_id)
+  end
 
   @spec get_idp(binary) :: nil | IdpData.t()
   def get_idp(idp_id) do

@@ -41,6 +41,11 @@ defmodule Samly.SpData do
   @default_org_displayname "SAML SP built with Samly"
   @default_org_url "https://github.com/handnot2/samly"
 
+  def store() do
+    Application.get_env(:samly, Samly.Provider, [])
+    |> Keyword.get(:sp_data_store, Samly.SpDataStore.Config)
+  end
+
   @spec load_providers(list(map)) :: %{required(id) => t}
   def load_providers(prov_configs) do
     prov_configs

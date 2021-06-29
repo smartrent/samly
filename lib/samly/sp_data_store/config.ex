@@ -1,29 +1,29 @@
-defmodule Samly.IdpDataStore.Config do
+defmodule Samly.SpDataStore.Config do
   @moduledoc """
-  Reads identity providers data from Application environment (config files).
+  Reads service provider data from Application environment (config files).
 
   This is the default behaviour. To change it, set the following config:
 
     config :samly, Samly.Provider,
-      idp_data_store: MyApp.IdpStore
+      sp_data_store: MyApp.SpStore
 
   This implementation only provides `init/2` and `get/1`.any()
   `delete/1` and `put/2` will return `:unsupported`.
   """
 
-  @behaviour Samly.IdpDataStore.Store
+  @behaviour Samly.SpDataStore.Store
 
   @impl true
   def init(opts) do
-    identity_providers = Samly.IdpData.load_providers(opts || [])
+    service_providers = Samly.SpData.load_providers(opts || [])
 
-    Application.put_env(:samly, :identity_providers, identity_providers)
+    Application.put_env(:samly, :service_providers, service_providers)
   end
 
   @impl true
   def get(idp_id) do
-    idps = Application.get_env(:samly, :identity_providers, %{})
-    Map.get(idps, idp_id)
+    sps = Application.get_env(:samly, :service_providers, %{})
+    Map.get(sps, idp_id)
   end
 
   @impl true
