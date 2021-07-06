@@ -128,9 +128,21 @@ defmodule Samly.IdpData do
   end
 
   @spec load_metadata(%IdpData{}, map()) :: %IdpData{}
-  defp load_metadata(%{metadata_file: metadata_file} = idp_data, _opts_map)
-       when is_binary(metadata_file) do
-    with {:reading, {:ok, raw_xml}} <- {:reading, File.read(idp_data.metadata_file)},
+  defp load_metadata(%IdpData{metadata: metadata} = idp_data, _opts_map)
+       when not is_nil(metadata) do
+    with {:parsing, {:ok, idp_data}} <- {:parsing, from_xml(metadata, idp_data)} do
+      idp_data
+    else
+      {:parsing, {:error, reason}} ->
+        Logger.error("[Samly] Invalid metadata content: #{inspect(reason)}")
+
+        idp_data
+    end
+  end
+
+  defp load_metadata(%IdpData{metadata_file: metadata_file} = idp_data, _opts_map)
+       when not is_nil(metadata_file) do
+    with {:reading, {:ok, raw_xml}} <- {:reading, File.read(metadata_file)},
          {:parsing, {:ok, idp_data}} <- {:parsing, from_xml(raw_xml, idp_data)} do
       idp_data
     else
@@ -152,24 +164,6 @@ defmodule Samly.IdpData do
 
         idp_data
     end
-  end
-
-  defp load_metadata(%{metadata: metadata} = idp_data, _opts_map) when is_binary(metadata) do
-    case from_xml(metadata, idp_data) do
-      {:ok, idp_data} ->
-        idp_data
-
-      {:error, reason} ->
-        Logger.error("[Samly] Invalid metadata content: #{inspect(reason)}")
-
-        idp_data
-    end
-  end
-
-  defp load_metadata(idp_data, _opts_map) do
-    Logger.error("[Samly] No metadata specified")
-
-    idp_data
   end
 
   @spec update_esaml_recs(%IdpData{}, map()) :: %IdpData{}
@@ -209,6 +203,10 @@ defmodule Samly.IdpData do
   @default_metadata_file "idp_metadata.xml"
 
   @spec set_metadata_file(%IdpData{}, map()) :: %IdpData{}
+  defp set_metadata_file(%IdpData{} = idp_data, %{metadata: metadata} = opts_map)
+       when not is_nil(metadata),
+       do: %IdpData{idp_data | metadata: Map.get(opts_map, :metadata)}
+
   defp set_metadata_file(%IdpData{} = idp_data, %{} = opts_map) do
     %IdpData{idp_data | metadata_file: Map.get(opts_map, :metadata_file, @default_metadata_file)}
   end
