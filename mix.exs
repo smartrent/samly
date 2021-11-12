@@ -13,7 +13,7 @@ defmodule Samly.Mixfile do
       description: @description,
       docs: docs(),
       package: package(),
-      elixir: "~> 1.6",
+      elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,
       deps: deps()
     ]
@@ -31,9 +31,8 @@ defmodule Samly.Mixfile do
     [
       {:plug, "~> 1.6"},
       {:esaml, "~> 4.2"},
-      {:sweet_xml, "~> 0.6.6"},
-      {:ex_doc, "~> 0.19.0", only: :dev, runtime: false},
-      {:inch_ex, "~> 1.0", only: [:dev, :test]}
+      {:sweet_xml, "~> 0.6"},
+      {:ex_doc, "~> 0.19", only: :dev, runtime: false}
     ]
   end
 
