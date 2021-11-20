@@ -28,3 +28,7 @@ use Mix.Config
 # here (which is why it is important to import them last).
 #
 #     import_config "#{Mix.env}.exs"
+
+config :samly, Samly.Provider,
+  idp_data_store: Samly.IdpDataStore.Process,
+  sp_data_store: Samly.SpDataStore.Process
